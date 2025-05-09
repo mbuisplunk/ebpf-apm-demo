@@ -1,0 +1,18 @@
+docker run --rm \
+  -e BEYLA_OPEN_PORT=8080 \
+  -e BEYLA_TRACE_PRINTER=text \
+  -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 \
+  --pid="container:spring-petclinic-petclinic-1" \
+  --privileged \
+  grafana/beyla:latest
+
+export SPLUNK_ACCESS_TOKEN=<ACCESS TOKEN>
+export SPLUNK_REALM=us1
+export SPLUNK_MEMORY_TOTAL_MIB=1024
+export OTEL_COLLECTOR_PORT_GRPC=4317
+export OTEL_COLLECTOR_PORT_HTTP=4318
+export OTEL_COLLECTOR_HOST=otel-collector
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
+
+
+

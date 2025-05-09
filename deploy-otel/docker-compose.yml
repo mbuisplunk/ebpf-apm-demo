@@ -1,0 +1,60 @@
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+# Deploy Otel collector and Grafana Beyla 
+x-default-logging: &logging
+  driver: "json-file"
+  options:
+    max-size: "5m"
+    max-file: "2"
+    tag: "{{.Name}}"
+networks:
+  default:
+    name: opentelemetry-demo
+    driver: bridge
+services:
+  # OpenTelemetry Collector
+  otel-collector:
+    image: quay.io/signalfx/splunk-otel-collector:latest
+    container_name: otel-collector
+    deploy:
+      resources:
+        limits:
+          memory: 200M
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-config.yml"]
+    user: 0:0
+    volumes:
+      - ./splunk/otelcol-config.yml:/etc/otelcol-config.yml
+      - ./logs:/logs
+      - ./checkpoint:/checkpoint
+    ports:
+      - "${OTEL_COLLECTOR_PORT_GRPC}"
+      - "${OTEL_COLLECTOR_PORT_HTTP}"
+      - "9464"
+      - "8888"
+      - "13133"
+      - "6060"
+      - "9080"
+      - "9411"
+      - "9943"
+    logging: *logging
+    environment:
+      - ENVOY_PORT
+      - HOST_FILESYSTEM
+      - OTEL_COLLECTOR_HOST
+      - OTEL_COLLECTOR_PORT_GRPC
+      - OTEL_COLLECTOR_PORT_HTTP
+      - GOMEMLIMIT=160MiB
+      - SPLUNK_ACCESS_TOKEN=${SPLUNK_ACCESS_TOKEN}
+      - SPLUNK_REALM=${SPLUNK_REALM}
+      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
+      - SPLUNK_HEC_URL=${SPLUNK_HEC_URL}
+      - SPLUNK_MEMORY_TOTAL_MIB=${SPLUNK_MEMORY_TOTAL_MIB}
+  autoinstrumenter:
+    image: grafana/beyla:latest
+    pid: "container:spring-petclinic-petclinic-1"
+    privileged: true
+    environment:
+      BEYLA_TRACE_PRINTER: text
+      BEYLA_OPEN_PORT: 8080
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
